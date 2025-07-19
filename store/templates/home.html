@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zaidi Mart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      .navbar-brand {
+        font-size: 35px;
+        font-weight: bold;
+      }
+      .nav-link {
+        font-size: 18px;
+        margin-right: 10px;
+      }
+      .dropdown-toggle {
+        font-size: 18px;
+      }
+      .btn-outline-light:hover {
+        background-color: #ffffff;
+        color: #000000;
+      }
+      .search-results-info {
+        margin-bottom: 20px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+      }
+      .no-results {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+      }
+      .clear-search {
+        margin-left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- Navbar Start -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm" style="height: 90px;">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">Zaidi Mart</a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarContent">
+          
+          <!-- Navigation Links -->
+          <ul class="navbar-nav me-auto mb-10 mb-lg-0">
+            <li class="nav-item"><a class="nav-link active" href="#">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="#">Sell Products</a></li>
+            <li class="nav-item"><a class="nav-link" href="#">Help & Support</a></li>
+          </ul>
+          
+          <!-- Search Bar -->
+          <form class="d-flex me-3" role="search" method="GET" action="{% url 'home' %}">
+            <input class="form-control me-2" type="search" name="search" id="search" 
+                   placeholder="Search products..." aria-label="Search" 
+                   value="{{ search_query|default:'' }}">
+            <!-- Preserve category filter when searching -->
+            {% if selected_category %}
+              <input type="hidden" name="category" value="{{ selected_category }}">
+            {% endif %}
+            <button class="btn btn-outline-light" type="submit">Search</button>
+            {% if search_query %}
+              <a href="{% url 'home' %}{% if selected_category %}?category={{ selected_category }}{% endif %}" 
+                 class="btn btn-outline-secondary clear-search">Clear</a>
+            {% endif %}
+          </form>
+          
+          <!-- User Area -->
+          <ul class="navbar-nav">
+            {% if request.session.username %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  {{ name|default:"User" }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                  <li><a href="{% url 'view_cart' %}" class="btn btn-outline-primary">Go to Cart 🛒</a></li>
+                  <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+                </ul>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a class="nav-link" href="login/">Login</a>
+              </li>
+            {% endif %}
+          </ul>
+          
+        </div>
+      </div>
+    </nav>
+    
+    <!-- Your page content goes here -->
+    {% block content %}
+    {% endblock %}
+
+    <div class="container-fluid">
+      <div class="row">
+
+        <div class="col-lg-3">
+          <div class="list-group">
+            <a href="/" class="list-group-item list-group-item-action 
+               {% if not selected_category %}active{% endif %}">All products</a>
+            {% for category in category %}
+              <a href="/?category={{category.id}}{% if search_query %}&search={{ search_query }}{% endif %}" 
+                 class="list-group-item list-group-item-action
+                 {% if selected_category == category.id|stringformat:'s' %}active{% endif %}">
+                {{category.name}}
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Products -->
+        <div id="product" class="col-lg-9">
+          
+          <!-- Search Results Info -->
+          {% if search_query %}
+            <div class="search-results-info">
+              <h5>Search Results for "{{ search_query }}"</h5>
+              <p>{{ product|length }} product{{ product|length|pluralize }} found</p>
+            </div>
+          {% endif %}
+          
+          {% if product %}
+            <div class="row mx-auto">
+              {% for product in product %}
+                <div class="card mx-auto mb-3" style="width: 18rem;">
+                  <a href="{% url 'product-detail' product.id %}" class="btn">
+                    <div class="item">
+                      <img src="{{product.image.url}}" class="card-img-top" alt="...">
+                    </div>
+                  </a>
+                  <div class="card-body">
+                    <h4 class="card-title">{{product.name}}</h4>
+                    <h6 class="card-text">Rs.{{product.price}}</h6>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="no-results">
+              <h4>No products found</h4>
+              {% if search_query %}
+                <p>No products match your search "{{ search_query }}"</p>
+                <a href="{% url 'home' %}" class="btn btn-primary">View All Products</a>
+              {% else %}
+                <p>No products available in this category</p>
+              {% endif %}
+            </div>
+          {% endif %}
+          
+        </div>
+      </div>
+    </div>
+    
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Dropdown Fix Script -->
+    <script>
+      // Wait for DOM and Bootstrap to load
+      document.addEventListener('DOMContentLoaded', function() {
+        // Small delay to ensure Bootstrap is fully loaded
+        setTimeout(function() {
+          // Check if Bootstrap is available
+          if (typeof bootstrap !== 'undefined') {
+            console.log('Bootstrap loaded successfully');
+            
+            // Initialize all dropdowns manually
+            const dropdownElements = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+            dropdownElements.forEach(function(dropdownToggleEl) {
+              if (!dropdownToggleEl._dropdown) {
+                try {
+                  const dropdown = new bootstrap.Dropdown(dropdownToggleEl);
+                  dropdownToggleEl._dropdown = dropdown;
+                  console.log('Dropdown initialized for:', dropdownToggleEl.id);
+                } catch (error) {
+                  console.error('Error initializing dropdown:', error);
+                }
+              }
+            });
+          } else {
+            console.error('Bootstrap not loaded');
+            
+            // Fallback: Manual dropdown functionality
+            const userDropdown = document.getElementById('userDropdown');
+            if (userDropdown) {
+              userDropdown.addEventListener('click', function(e) {
+                e.preventDefault();
+                const menu = this.nextElementSibling;
+                if (menu && menu.classList.contains('dropdown-menu')) {
+                  // Close other dropdowns
+                  document.querySelectorAll('.dropdown-menu.show').forEach(m => {
+                    if (m !== menu) m.classList.remove('show');
+                  });
+                  // Toggle current dropdown
+                  menu.classList.toggle('show');
+                }
+              });
+              
+              // Close dropdown when clicking outside
+              document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                  document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.remove('show');
+                  });
+                }
+              });
+            }
+          }
+        }, 100);
+      });
+
+      // Auto-submit search form on Enter key (optional enhancement)
+      document.getElementById('search').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.form.submit();
+        }
+      });
+    </script>
+  </body>
+</html>
